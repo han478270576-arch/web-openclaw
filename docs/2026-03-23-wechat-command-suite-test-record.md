@@ -19,6 +19,8 @@ Production verification for the WeChat command suite v1.
 - `?? coder: ...`
 - `?? ops: ...`
 - `?? research: ...`
+- `?? finance: ...`
+- `?? crypto: ...`
 
 ## Result
 

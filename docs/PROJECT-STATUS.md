@@ -33,6 +33,8 @@ Capabilities:
 - `?? coder: ...`
 - `?? ops: ...`
 - `?? research: ...`
+- `?? finance: ...`
+- `?? crypto: ...`
 
 ## Server-side routing highlights
 - `main` -> `myopenai/gpt-5.4`

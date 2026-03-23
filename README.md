@@ -24,6 +24,8 @@ Current focus:
 - `?? coder: ...`
 - `?? ops: ...`
 - `?? research: ...`
+- `?? finance: ...`
+- `?? crypto: ...`
 
 ## Repository structure
 

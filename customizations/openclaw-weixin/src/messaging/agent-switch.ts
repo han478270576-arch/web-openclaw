@@ -68,7 +68,7 @@ type PeerRuntimeState = {
 };
 
 type OneShotDelegation = {
-  target: "coder" | "ops" | "research";
+  target: "coder" | "ops" | "research" | "finance" | "crypto";
   agentId: string;
   modelId?: string;
   cleanedContent: string;
@@ -294,6 +294,8 @@ function buildTopMenu(): string {
     "7. \u4ea4\u7ed9 coder: ...",
     "8. \u4ea4\u7ed9 ops: ...",
     "9. \u4ea4\u7ed9 research: ...",
+    "10. \u4ea4\u7ed9 finance: ...",
+    "11. \u4ea4\u7ed9 crypto: ...",
   ].join("\n");
 }
 
@@ -548,9 +550,13 @@ export function resolveOneShotDelegation(raw: string): OneShotDelegation | undef
     { re: /^\u4ea4\u7ed9\s*coder\s*[:\uff1a]\s*(.+)$/i, target: "coder", agentId: "aji-coder", modelId: "gpt-5.3-codex", label: "\u7f16\u7a0b\u4e13\u5bb6" },
     { re: /^\u4ea4\u7ed9\s*ops\s*[:\uff1a]\s*(.+)$/i, target: "ops", agentId: "aji-ops", modelId: "gpt-5.4", label: "\u8fd0\u7ef4\u4e13\u5bb6" },
     { re: /^\u4ea4\u7ed9\s*research\s*[:\uff1a]\s*(.+)$/i, target: "research", agentId: "aji-research", label: "\u6df1\u5ea6\u7814\u7a76\u5458" },
+    { re: /^\u4ea4\u7ed9\s*finance\s*[:\uff1a]\s*(.+)$/i, target: "finance", agentId: "aji-finance", label: "\u91d1\u878d\u4e13\u5bb6" },
+    { re: /^\u4ea4\u7ed9\s*crypto\s*[:\uff1a]\s*(.+)$/i, target: "crypto", agentId: "aji-crypto", label: "\u52a0\u5bc6\u7814\u7a76\u5458" },
     { re: /^\u4ea4\u7ed9\s*\u7f16\u7a0b\u4e13\u5bb6\s*[:\uff1a]\s*(.+)$/i, target: "coder", agentId: "aji-coder", modelId: "gpt-5.3-codex", label: "\u7f16\u7a0b\u4e13\u5bb6" },
     { re: /^\u4ea4\u7ed9\s*\u8fd0\u7ef4\u4e13\u5bb6\s*[:\uff1a]\s*(.+)$/i, target: "ops", agentId: "aji-ops", modelId: "gpt-5.4", label: "\u8fd0\u7ef4\u4e13\u5bb6" },
     { re: /^\u4ea4\u7ed9\s*\u6df1\u5ea6\u7814\u7a76\u5458\s*[:\uff1a]\s*(.+)$/i, target: "research", agentId: "aji-research", label: "\u6df1\u5ea6\u7814\u7a76\u5458" },
+    { re: /^\u4ea4\u7ed9\s*\u91d1\u878d\u4e13\u5bb6\s*[:\uff1a]\s*(.+)$/i, target: "finance", agentId: "aji-finance", label: "\u91d1\u878d\u4e13\u5bb6" },
+    { re: /^\u4ea4\u7ed9\s*\u52a0\u5bc6\u7814\u7a76\u5458\s*[:\uff1a]\s*(.+)$/i, target: "crypto", agentId: "aji-crypto", label: "\u52a0\u5bc6\u7814\u7a76\u5458" },
   ];
   for (const pattern of patterns) {
     const match = trimmed.match(pattern.re);
