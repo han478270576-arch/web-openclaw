@@ -20,7 +20,7 @@ Capabilities:
 
 ### 2. WeChat command suite v1
 
-Status: implemented in production runtime
+Status: implemented in production runtime and verified in live WeChat conversation
 
 Capabilities:
 - `??`
@@ -58,3 +58,7 @@ The WeChat command implementation lives inside the `openclaw-weixin` plugin sour
 - recovery note preserved in `docs/`
 - verification and reapply scripts preserved in `scripts/`
 - current source snapshot preserved in `customizations/`
+
+## Test record
+
+- `docs/2026-03-23-wechat-command-suite-test-record.md`
