@@ -30,7 +30,7 @@ import type { WeixinInboundMediaOpts } from "./inbound.js";
 import { sendWeixinMediaFile } from "./send-media.js";
 import { markdownToPlainText, sendMessageWeixin } from "./send.js";
 import { handleSlashCommand } from "./slash-commands.js";
-import { applyAgentOverrideToRoute, handleAgentSwitchCommand } from "./agent-switch.js";
+import { applyAgentOverrideToRoute, buildOneShotDelegationNotice, cloneConfigWithRouteOverrides, handleAgentSwitchCommand, resolveOneShotDelegation } from "./agent-switch.js";
 
 const MEDIA_OUTBOUND_TEMP_DIR = path.join(resolvePreferredOpenClawTmpDir(), "weixin/media/outbound-temp");
 
@@ -80,8 +80,10 @@ export async function processOneMessage(
   const debugTs: Record<string, number> = { received: receivedAt };
 
   const textBody = extractTextBody(full.item_list);
+  const oneShotDelegation = resolveOneShotDelegation(textBody);
+  const effectiveTextBody = oneShotDelegation?.cleanedContent || textBody;
   const agentSwitchResult = await handleAgentSwitchCommand({
-    content: textBody,
+    content: effectiveTextBody,
     to: full.from_user_id ?? "",
     contextToken: full.context_token,
     baseUrl: deps.baseUrl,
@@ -96,8 +98,8 @@ export async function processOneMessage(
     return;
   }
 
-  if (textBody.startsWith("/")) {
-    const slashResult = await handleSlashCommand(textBody, {
+  if (effectiveTextBody.startsWith("/")) {
+    const slashResult = await handleSlashCommand(effectiveTextBody, {
       to: full.from_user_id ?? "",
       contextToken: full.context_token,
       baseUrl: deps.baseUrl,
@@ -176,7 +178,7 @@ export async function processOneMessage(
   const ctx = weixinMessageToMsgContext(full, deps.accountId, mediaOpts);
 
   // --- Framework command authorization ---
-  const rawBody = ctx.Body?.trim() ?? "";
+  const rawBody = effectiveTextBody || ctx.Body?.trim() || "";
   ctx.CommandBody = rawBody;
 
   const senderId = full.from_user_id ?? "";
@@ -238,6 +240,13 @@ export async function processOneMessage(
     peerId: ctx.To,
     channel: "openclaw-weixin",
     chatType: "direct",
+    forceAgentId: oneShotDelegation?.agentId,
+  });
+  const effectiveCfg = cloneConfigWithRouteOverrides(deps.config, {
+    accountId: deps.accountId,
+    peerId: ctx.To,
+    effectiveAgentId: route.agentId ?? undefined,
+    forceModelId: oneShotDelegation?.modelId,
   });
   logger.debug(
     `resolveAgentRoute: agentId=${route.agentId ?? "(none)"} sessionKey=${route.sessionKey ?? "(none)"} mainSessionKey=${route.mainSessionKey ?? "(none)"}`,
@@ -258,6 +267,12 @@ export async function processOneMessage(
   // the correct session (matching the dmScope from config) instead of falling back
   // to agent:main:main.
   ctx.SessionKey = route.sessionKey;
+
+  if (oneShotDelegation) {
+    logger.info(`[weixin] one-shot delegation target=${oneShotDelegation.target} agent=${oneShotDelegation.agentId} model=${oneShotDelegation.modelId ?? "(default)"}`);
+    ctx.Body = effectiveTextBody;
+    ctx.CommandBody = effectiveTextBody;
+  }
   const storePath = deps.channelRuntime.session.resolveStorePath(deps.config.session?.store, {
     agentId: route.agentId,
   });
@@ -325,6 +340,18 @@ export async function processOneMessage(
 
   /** Delivery records populated synchronously at deliver() entry, safe to read in finally. */
   const debugDeliveries: Array<{ textLen: number; media: string; preview: string; ts: number }> = [];
+
+  if (oneShotDelegation && contextToken) {
+    try {
+      await sendMessageWeixin({
+        to: ctx.To,
+        text: buildOneShotDelegationNotice(oneShotDelegation),
+        opts: { baseUrl: deps.baseUrl, token: deps.token, contextToken },
+      });
+    } catch (err) {
+      logger.warn(`[weixin] failed to send delegation notice: ${String(err)}`);
+    }
+  }
 
   const { dispatcher, replyOptions, markDispatchIdle } =
     deps.channelRuntime.reply.createReplyDispatcherWithTyping({
@@ -438,7 +465,7 @@ export async function processOneMessage(
       run: () =>
         deps.channelRuntime.reply.dispatchReplyFromConfig({
           ctx: finalized,
-          cfg: deps.config,
+          cfg: effectiveCfg,
           dispatcher,
           replyOptions,
         }),
